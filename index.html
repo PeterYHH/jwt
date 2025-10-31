@@ -139,6 +139,77 @@
             line-height: 1.6;
         }
 
+        .token-status {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .token-status.valid {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .token-status.expired {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .token-status.not-yet-valid {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .token-status.no-expiry {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .token-time-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .time-item {
+            background: white;
+            padding: 12px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .time-item .label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .time-item .value {
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .countdown {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .countdown.warning {
+            color: #ffc107;
+        }
+
+        .countdown.danger {
+            color: #dc3545;
+        }
+
         .input-group {
             margin-bottom: 20px;
         }
@@ -286,6 +357,8 @@
                     <pre id="signature-output">Not verified</pre>
                 </div>
             </div>
+
+            <div id="token-status-container"></div>
         </div>
 
         <!-- 編碼頁籤 -->
@@ -372,6 +445,165 @@
             }
         }
 
+        // 格式化時間 (UTC+8 台灣時區)
+        function formatTime(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Taipei'
+            }) + ' (UTC+8)';
+        }
+
+        // 格式化倒數計時
+        function formatCountdown(seconds) {
+            if (seconds < 0) return 'Expired';
+            
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            const parts = [];
+            if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+            if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+            if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+            if (secs > 0 || parts.length === 0) parts.push(`${secs} second${secs > 1 ? 's' : ''}`);
+
+            return parts.join(' ');
+        }
+
+        // 檢查 Token 狀態
+        let countdownInterval = null;
+
+        function checkTokenStatus(payload) {
+            const container = document.getElementById('token-status-container');
+            
+            // 清除之前的倒數計時
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            if (!payload.exp && !payload.nbf && !payload.iat) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const now = Math.floor(Date.now() / 1000);
+            const exp = payload.exp;
+            const nbf = payload.nbf;
+            const iat = payload.iat;
+
+            let statusClass = '';
+            let statusText = '';
+            let showCountdown = false;
+
+            if (exp) {
+                if (now >= exp) {
+                    statusClass = 'expired';
+                    statusText = '⚠️ Token has expired';
+                } else if (nbf && now < nbf) {
+                    statusClass = 'not-yet-valid';
+                    statusText = '⏰ Token not yet valid';
+                } else {
+                    statusClass = 'valid';
+                    statusText = '✅ Token is valid';
+                    showCountdown = true;
+                }
+            } else {
+                statusClass = 'no-expiry';
+                statusText = 'ℹ️ Token has no expiration time';
+            }
+
+            let html = `<div class="token-status ${statusClass}">
+                <div>${statusText}</div>`;
+
+            // 顯示時間資訊
+            html += '<div class="token-time-info">';
+            
+            if (iat) {
+                html += `
+                    <div class="time-item">
+                        <div class="label">Issued At (iat)</div>
+                        <div class="value">${formatTime(iat)}</div>
+                    </div>`;
+            }
+
+            if (nbf) {
+                html += `
+                    <div class="time-item">
+                        <div class="label">Not Before (nbf)</div>
+                        <div class="value">${formatTime(nbf)}</div>
+                    </div>`;
+            }
+
+            if (exp) {
+                html += `
+                    <div class="time-item">
+                        <div class="label">Expiration Time (exp)</div>
+                        <div class="value">${formatTime(exp)}</div>
+                    </div>`;
+            }
+
+            html += '</div>';
+
+            // 倒數計時
+            if (showCountdown && exp) {
+                html += '<div id="countdown-timer" class="countdown"></div>';
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+
+            // 啟動倒數計時
+            if (showCountdown && exp) {
+                function updateCountdown() {
+                    const now = Math.floor(Date.now() / 1000);
+                    const remaining = exp - now;
+                    const countdownEl = document.getElementById('countdown-timer');
+                    
+                    if (!countdownEl) {
+                        if (countdownInterval) {
+                            clearInterval(countdownInterval);
+                            countdownInterval = null;
+                        }
+                        return;
+                    }
+
+                    if (remaining <= 0) {
+                        countdownEl.textContent = 'Expired';
+                        countdownEl.className = 'countdown danger';
+                        if (countdownInterval) {
+                            clearInterval(countdownInterval);
+                            countdownInterval = null;
+                        }
+                        checkTokenStatus(payload); // 重新檢查狀態
+                        return;
+                    }
+
+                    countdownEl.textContent = `Remaining: ${formatCountdown(remaining)}`;
+                    
+                    // 根據剩餘時間調整顏色
+                    if (remaining < 300) { // Less than 5 minutes
+                        countdownEl.className = 'countdown danger';
+                    } else if (remaining < 3600) { // Less than 1 hour
+                        countdownEl.className = 'countdown warning';
+                    } else {
+                        countdownEl.className = 'countdown';
+                    }
+                }
+
+                updateCountdown();
+                countdownInterval = setInterval(updateCountdown, 1000);
+            }
+        }
+
         // 監聽輸入
         document.getElementById('jwt-input').addEventListener('input', function() {
             const token = this.value.trim();
@@ -381,7 +613,12 @@
                 document.getElementById('header-output').textContent = '{}';
                 document.getElementById('payload-output').textContent = '{}';
                 document.getElementById('signature-output').textContent = 'Not verified';
+                document.getElementById('token-status-container').innerHTML = '';
                 errorDiv.style.display = 'none';
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
                 return;
             }
 
@@ -391,9 +628,17 @@
                 document.getElementById('payload-output').textContent = JSON.stringify(decoded.payload, null, 2);
                 document.getElementById('signature-output').textContent = decoded.signature;
                 errorDiv.style.display = 'none';
+                
+                // 檢查 Token 狀態
+                checkTokenStatus(decoded.payload);
             } catch (error) {
                 errorDiv.textContent = error.message;
                 errorDiv.style.display = 'block';
+                document.getElementById('token-status-container').innerHTML = '';
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
             }
         });
 
