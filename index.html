@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -210,7 +210,41 @@
             color: #dc3545;
         }
 
-        .input-group {
+        .copy-button {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .copy-button:active {
+            transform: translateY(0);
+        }
+
+        .copy-button.copied {
+            background: #17a2b8;
+        }
+
+        .copy-button svg {
+            width: 16px;
+            height: 16px;
+        }
+      .input-group {
             margin-bottom: 20px;
         }
 
@@ -334,7 +368,7 @@
             <button class="tab" onclick="switchTab('encode')">Encode JWT</button>
         </div>
 
-        <!-- 解碼頁籤 -->
+        <!-- Decode Tab -->
         <div id="decode-tab" class="tab-content active">
             <div class="section">
                 <div class="section-title">Input JWT Token</div>
@@ -361,7 +395,7 @@
             <div id="token-status-container"></div>
         </div>
 
-        <!-- 編碼頁籤 -->
+        <!-- Encode Tab -->
         <div id="encode-tab" class="tab-content">
             <div class="grid-2">
                 <div class="section">
@@ -397,12 +431,19 @@
             <div class="section" id="generated-section" style="display: none;">
                 <div class="section-title">Generated JWT Token</div>
                 <textarea id="generated-jwt" readonly></textarea>
+                <button class="copy-button" id="copy-jwt-btn" onclick="copyJWT()">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+                    </svg>
+                    <span id="copy-btn-text">Copy JWT Token</span>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Base64 URL 編碼/解碼
+        // Base64 URL Encode/Decode
         function base64UrlEncode(str) {
             return btoa(str)
                 .replace(/\+/g, '-')
@@ -418,7 +459,7 @@
             return atob(str);
         }
 
-        // 切換頁籤
+        // Switch Tab
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -427,7 +468,7 @@
             document.getElementById(tab + '-tab').classList.add('active');
         }
 
-        // 解碼 JWT
+        // Decode JWT
         function decodeJWT(token) {
             try {
                 const parts = token.split('.');
@@ -445,9 +486,9 @@
             }
         }
 
-        // 格式化時間 (UTC+8 台灣時區)
+        // Format Time (UTC+8 Taiwan Timezone)
         function formatTime(timestamp) {
-            const date = new Date(timestamp * 1000);
+            const date = new Date(timestamp * 1000); // The timeZone option might not be supported in all browsers
             return date.toLocaleString('zh-TW', {
                 year: 'numeric',
                 month: '2-digit',
@@ -460,7 +501,7 @@
             }) + ' (UTC+8)';
         }
 
-        // 格式化倒數計時
+        // Format Countdown
         function formatCountdown(seconds) {
             if (seconds < 0) return 'Expired';
             
@@ -478,13 +519,13 @@
             return parts.join(' ');
         }
 
-        // 檢查 Token 狀態
+        // Check Token Status
         let countdownInterval = null;
 
         function checkTokenStatus(payload) {
             const container = document.getElementById('token-status-container');
             
-            // 清除之前的倒數計時
+            // Clear previous countdown interval
             if (countdownInterval) {
                 clearInterval(countdownInterval);
                 countdownInterval = null;
@@ -524,7 +565,7 @@
             let html = `<div class="token-status ${statusClass}">
                 <div>${statusText}</div>`;
 
-            // 顯示時間資訊
+            // Display time information
             html += '<div class="token-time-info">';
             
             if (iat) {
@@ -553,7 +594,7 @@
 
             html += '</div>';
 
-            // 倒數計時
+            // Countdown timer
             if (showCountdown && exp) {
                 html += '<div id="countdown-timer" class="countdown"></div>';
             }
@@ -561,7 +602,7 @@
             html += '</div>';
             container.innerHTML = html;
 
-            // 啟動倒數計時
+            // Start countdown timer
             if (showCountdown && exp) {
                 function updateCountdown() {
                     const now = Math.floor(Date.now() / 1000);
@@ -583,13 +624,13 @@
                             clearInterval(countdownInterval);
                             countdownInterval = null;
                         }
-                        checkTokenStatus(payload); // 重新檢查狀態
+                        checkTokenStatus(payload); // Re-check status
                         return;
                     }
 
                     countdownEl.textContent = `Remaining: ${formatCountdown(remaining)}`;
                     
-                    // 根據剩餘時間調整顏色
+                    // Adjust color based on remaining time
                     if (remaining < 300) { // Less than 5 minutes
                         countdownEl.className = 'countdown danger';
                     } else if (remaining < 3600) { // Less than 1 hour
@@ -604,7 +645,7 @@
             }
         }
 
-        // 監聽輸入
+        // Listen for input
         document.getElementById('jwt-input').addEventListener('input', function() {
             const token = this.value.trim();
             const errorDiv = document.getElementById('decode-error');
@@ -629,7 +670,7 @@
                 document.getElementById('signature-output').textContent = decoded.signature;
                 errorDiv.style.display = 'none';
                 
-                // 檢查 Token 狀態
+                // Check Token Status
                 checkTokenStatus(decoded.payload);
             } catch (error) {
                 errorDiv.textContent = error.message;
@@ -642,7 +683,7 @@
             }
         });
 
-        // HMAC SHA256 實作 (使用 Web Crypto API)
+        // HMAC SHA implementation (using Web Crypto API)
         async function generateJWT() {
             const headerInput = document.getElementById('header-input').value.trim();
             const payloadInput = document.getElementById('payload-input').value.trim();
@@ -673,7 +714,7 @@
                 const encodedPayload = base64UrlEncode(JSON.stringify(payload));
                 const message = encodedHeader + '.' + encodedPayload;
 
-                // 使用 Web Crypto API 生成簽名
+                // Generate signature using Web Crypto API
                 const encoder = new TextEncoder();
                 const key = await crypto.subtle.importKey(
                     'raw',
@@ -698,8 +739,15 @@
 
                 document.getElementById('generated-jwt').value = jwt;
                 document.getElementById('generated-section').style.display = 'block';
+                document.getElementById('copy-jwt-btn').style.display = 'inline-flex';
                 successDiv.textContent = 'JWT Token generated successfully!';
                 successDiv.style.display = 'block';
+
+                // Reset copy button state
+                const copyBtn = document.getElementById('copy-jwt-btn');
+                const copyBtnText = document.getElementById('copy-btn-text');
+                copyBtn.classList.remove('copied');
+                copyBtnText.textContent = 'Copy JWT Token';
 
             } catch (error) {
                 errorDiv.textContent = 'Generation failed: ' + error.message;
@@ -707,7 +755,34 @@
             }
         }
 
-        // 初始化預設值
+        // Copy JWT Token
+        function copyJWT() {
+            const jwtText = document.getElementById('generated-jwt').value;
+            const copyBtn = document.getElementById('copy-jwt-btn');
+            const copyBtnText = document.getElementById('copy-btn-text');
+
+            if (!jwtText) {
+                return;
+            }
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(jwtText).then(() => {
+                // Change button style and text
+                copyBtn.classList.add('copied');
+                copyBtnText.textContent = '✓ Copied!';
+
+                // Revert after 2 seconds
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyBtnText.textContent = 'Copy JWT Token';
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Copy failed, please copy manually.');
+            });
+        }
+
+        // Initialize with default values
         document.getElementById('header-input').value = JSON.stringify({
             "alg": "HS256",
             "typ": "JWT"
