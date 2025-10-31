@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            background: #e8e8e8;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .decoded-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .decoded-box {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .decoded-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .decoded-box pre {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .header p {
+                font-size: 0.9rem;
+            }
+
+            .tab {
+                padding: 15px 10px;
+                font-size: 0.95rem;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+
+            .decoded-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JWT Token</h1>
+            <p>Parse and Generate JSON Web Tokens</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('decode')">Decode JWT</button>
+            <button class="tab" onclick="switchTab('encode')">Encode JWT</button>
+        </div>
+
+        <!-- 解碼頁籤 -->
+        <div id="decode-tab" class="tab-content active">
+            <div class="section">
+                <div class="section-title">Input JWT Token</div>
+                <textarea id="jwt-input" placeholder="Paste your JWT Token..."></textarea>
+            </div>
+
+            <div id="decode-error" class="alert alert-error" style="display: none;"></div>
+
+            <div class="decoded-section">
+                <div class="decoded-box">
+                    <h3>Header</h3>
+                    <pre id="header-output">{}</pre>
+                </div>
+                <div class="decoded-box">
+                    <h3>Payload</h3>
+                    <pre id="payload-output">{}</pre>
+                </div>
+                <div class="decoded-box">
+                    <h3>Signature</h3>
+                    <pre id="signature-output">Not verified</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- 編碼頁籤 -->
+        <div id="encode-tab" class="tab-content">
+            <div class="grid-2">
+                <div class="section">
+                    <div class="section-title">Header</div>
+                    <textarea id="header-input" placeholder='{"alg": "HS256", "typ": "JWT"}'></textarea>
+                </div>
+                <div class="section">
+                    <div class="section-title">Payload</div>
+                    <textarea id="payload-input" placeholder='{"sub": "1234567890", "name": "John Doe", "iat": 1516239022}'></textarea>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="input-group">
+                    <label>Algorithm</label>
+                    <select id="algorithm-select">
+                        <option value="HS256">HS256</option>
+                        <option value="HS384">HS384</option>
+                        <option value="HS512">HS512</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Secret Key</label>
+                    <input type="text" id="secret-input" placeholder="Enter your Secret Key">
+                </div>
+            </div>
+
+            <button class="button" onclick="generateJWT()">Generate JWT Token</button>
+
+            <div id="encode-error" class="alert alert-error" style="display: none;"></div>
+            <div id="encode-success" class="alert alert-success" style="display: none;"></div>
+
+            <div class="section" id="generated-section" style="display: none;">
+                <div class="section-title">Generated JWT Token</div>
+                <textarea id="generated-jwt" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base64 URL 編碼/解碼
+        function base64UrlEncode(str) {
+            return btoa(str)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) {
+                str += '=';
+            }
+            return atob(str);
+        }
+
+        // 切換頁籤
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        // 解碼 JWT
+        function decodeJWT(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format');
+                }
+
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                const signature = parts[2];
+
+                return { header, payload, signature };
+            } catch (error) {
+                throw new Error('Could not parse JWT: ' + error.message);
+            }
+        }
+
+        // 監聽輸入
+        document.getElementById('jwt-input').addEventListener('input', function() {
+            const token = this.value.trim();
+            const errorDiv = document.getElementById('decode-error');
+
+            if (!token) {
+                document.getElementById('header-output').textContent = '{}';
+                document.getElementById('payload-output').textContent = '{}';
+                document.getElementById('signature-output').textContent = 'Not verified';
+                errorDiv.style.display = 'none';
+                return;
+            }
+
+            try {
+                const decoded = decodeJWT(token);
+                document.getElementById('header-output').textContent = JSON.stringify(decoded.header, null, 2);
+                document.getElementById('payload-output').textContent = JSON.stringify(decoded.payload, null, 2);
+                document.getElementById('signature-output').textContent = decoded.signature;
+                errorDiv.style.display = 'none';
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // HMAC SHA256 實作 (使用 Web Crypto API)
+        async function generateJWT() {
+            const headerInput = document.getElementById('header-input').value.trim();
+            const payloadInput = document.getElementById('payload-input').value.trim();
+            const secret = document.getElementById('secret-input').value;
+            const algorithm = document.getElementById('algorithm-select').value;
+            const errorDiv = document.getElementById('encode-error');
+            const successDiv = document.getElementById('encode-success');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            try {
+                if (!headerInput || !payloadInput) {
+                    throw new Error('Please fill in Header and Payload');
+                }
+
+                if (!secret) {
+                    throw new Error('Please enter a Secret Key');
+                }
+
+                const header = JSON.parse(headerInput);
+                const payload = JSON.parse(payloadInput);
+
+                header.alg = algorithm;
+                header.typ = 'JWT';
+
+                const encodedHeader = base64UrlEncode(JSON.stringify(header));
+                const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+                const message = encodedHeader + '.' + encodedPayload;
+
+                // 使用 Web Crypto API 生成簽名
+                const encoder = new TextEncoder();
+                const key = await crypto.subtle.importKey(
+                    'raw',
+                    encoder.encode(secret),
+                    { name: 'HMAC', hash: algorithm.replace('HS', 'SHA-') },
+                    false,
+                    ['sign']
+                );
+
+                const signature = await crypto.subtle.sign(
+                    'HMAC',
+                    key,
+                    encoder.encode(message)
+                );
+
+                const signatureArray = Array.from(new Uint8Array(signature));
+                const signatureBase64 = base64UrlEncode(
+                    String.fromCharCode.apply(null, signatureArray)
+                );
+
+                const jwt = message + '.' + signatureBase64;
+
+                document.getElementById('generated-jwt').value = jwt;
+                document.getElementById('generated-section').style.display = 'block';
+                successDiv.textContent = 'JWT Token generated successfully!';
+                successDiv.style.display = 'block';
+
+            } catch (error) {
+                errorDiv.textContent = 'Generation failed: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 初始化預設值
+        document.getElementById('header-input').value = JSON.stringify({
+            "alg": "HS256",
+            "typ": "JWT"
+        }, null, 2);
+
+        document.getElementById('payload-input').value = JSON.stringify({
+            "sub": "1234567890",
+            "name": "John Doe",
+            "iat": Math.floor(Date.now() / 1000)
+        }, null, 2);
+    </script>
+</body>
+</html>
