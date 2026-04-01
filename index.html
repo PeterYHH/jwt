@@ -5,685 +5,713 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JWT Token</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --primary-light: #2dd4bf;
+            --secondary: #f59e0b;
+            --bg: #0a0f0f;
+            --bg-card: #111918;
+            --bg-input: #0d1f1e;
+            --bg-box: #131f1e;
+            --border: #1f3330;
+            --border-focus: #0d9488;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #4b6b68;
+            --success: #10b981;
+            --success-bg: #064e3b;
+            --danger: #ef4444;
+            --danger-bg: #450a0a;
+            --warning: #f59e0b;
+            --warning-bg: #451a03;
+            --info: #06b6d4;
+            --info-bg: #0c4a6e;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.5);
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(13,148,136,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(245,158,11,0.06) 0%, transparent 50%);
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1300px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
         }
 
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
+            padding: 48px 24px 40px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(13,148,136,0.15);
+            border: 1px solid rgba(13,148,136,0.3);
+            color: var(--primary-light);
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 7px; height: 7px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--primary-light);
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #ccfbf1 0%, var(--primary-light) 50%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
         }
 
         .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
+            color: var(--text-muted);
+            font-size: 1.05rem;
         }
 
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        /* Tabs */
         .tabs {
             display: flex;
-            background: #f5f5f5;
-            border-bottom: 2px solid #ddd;
+            padding: 8px;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
         }
 
         .tab {
             flex: 1;
-            padding: 20px;
+            padding: 12px 20px;
             text-align: center;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: #666;
-            transition: all 0.3s;
+            color: var(--text-muted);
             border: none;
             background: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .tab:hover {
-            background: #e8e8e8;
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
         }
 
         .tab.active {
-            background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(13,148,136,0.4);
         }
 
+        .tab-icon { font-size: 1rem; }
+
+        /* Tab Content */
         .tab-content {
             display: none;
-            padding: 30px;
+            padding: 32px;
         }
 
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content.active { display: block; }
 
-        .section {
-            margin-bottom: 30px;
-        }
+        /* Section */
+        .section { margin-bottom: 24px; }
 
         .section-title {
-            font-size: 1.3rem;
-            color: #333;
-            margin-bottom: 15px;
-            font-weight: 600;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        textarea {
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Textarea & Input */
+        textarea, input, select {
             width: 100%;
-            min-height: 150px;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+            font-size: 13.5px;
+            line-height: 1.7;
+            padding: 14px 16px;
             resize: vertical;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        textarea:focus {
+        textarea { min-height: 140px; }
+
+        textarea:focus, input:focus, select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
         }
 
+        textarea::placeholder, input::placeholder {
+            color: var(--text-dim);
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        /* Input Group */
+        .input-group { margin-bottom: 16px; }
+
+        .input-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+            letter-spacing: 0.03em;
+        }
+
+        /* Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Decoded Grid */
         .decoded-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
             margin-top: 20px;
         }
 
         .decoded-box {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
+            background: var(--bg-box);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
         }
 
+        .decoded-box-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .decoded-box-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-header { background: #f59e0b; }
+        .dot-payload { background: #2dd4bf; }
+        .dot-sig { background: #94a3b8; }
+
         .decoded-box h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
         }
 
         .decoded-box pre {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 13px;
-            line-height: 1.6;
+            padding: 16px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+            font-size: 12.5px;
+            line-height: 1.8;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 80px;
         }
 
+        /* Token Status */
         .token-status {
             margin-top: 20px;
-            padding: 20px;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 20px 24px;
+            border-radius: var(--radius);
+            border: 1px solid;
         }
 
         .token-status.valid {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
+            background: rgba(16,185,129,0.08);
+            border-color: rgba(16,185,129,0.3);
+            color: #6ee7b7;
         }
 
         .token-status.expired {
-            background: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
+            background: rgba(239,68,68,0.08);
+            border-color: rgba(239,68,68,0.3);
+            color: #fca5a5;
         }
 
         .token-status.not-yet-valid {
-            background: #fff3cd;
-            color: #856404;
-            border-left: 4px solid #ffc107;
+            background: rgba(245,158,11,0.08);
+            border-color: rgba(245,158,11,0.3);
+            color: #fcd34d;
         }
 
         .token-status.no-expiry {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
+            background: rgba(6,182,212,0.08);
+            border-color: rgba(6,182,212,0.3);
+            color: #67e8f9;
+        }
+
+        .status-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .token-time-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 4px;
         }
 
         .time-item {
-            background: white;
-            padding: 12px;
-            border-radius: 5px;
-            border-left: 3px solid #667eea;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.07);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            min-width: 180px;
         }
 
         .time-item .label {
-            font-size: 0.85rem;
-            color: #666;
-            margin-bottom: 5px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            opacity: 0.6;
+            margin-bottom: 4px;
         }
 
         .time-item .value {
-            font-size: 1.1rem;
-            color: #333;
+            font-size: 0.88rem;
+            font-weight: 500;
         }
 
         .countdown {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-top: 10px;
+            margin-top: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .countdown.warning {
-            color: #ffc107;
+        .countdown::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: currentColor;
+            border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
+            animation: pulse 1.5s infinite;
         }
 
-        .countdown.danger {
-            color: #dc3545;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
+
+        .countdown.warning { color: var(--warning); }
+        .countdown.danger  { color: var(--danger); }
+
+        /* Buttons */
+        .button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, #0f766e 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 16px rgba(13,148,136,0.35);
+        }
+
+        .button:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(13,148,136,0.45);
+        }
+
+        .button:active { transform: translateY(0); }
 
         .copy-button {
-            background: #28a745;
-            color: white;
+            margin-top: 12px;
             padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.9rem;
+            background: rgba(16,185,129,0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .copy-button:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-        }
-
-        .copy-button:active {
-            transform: translateY(0);
+            background: rgba(16,185,129,0.25);
+            border-color: rgba(16,185,129,0.5);
         }
 
         .copy-button.copied {
-            background: #17a2b8;
+            background: rgba(99,102,241,0.15);
+            color: var(--primary-light);
+            border-color: rgba(99,102,241,0.3);
         }
 
-        .copy-button svg {
-            width: 16px;
-            height: 16px;
-        }
-      .input-group {
-            margin-bottom: 20px;
-        }
+        .copy-button svg { width: 15px; height: 15px; }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
-        }
-
-        .input-group input,
-        .input-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .input-group input:focus,
-        .input-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-        }
-
-        .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .button:active {
-            transform: translateY(0);
-        }
-
+        /* Alerts */
         .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
             font-weight: 500;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .alert-error {
-            background: #fee;
-            color: #c33;
-            border-left: 4px solid #c33;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
         }
 
         .alert-success {
-            background: #efe;
-            color: #3c3;
-            border-left: 4px solid #3c3;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #6ee7b7;
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+        /* Generated JWT output */
+        #generated-jwt {
+            background: var(--bg-input);
+            color: #5eead4;
+            font-weight: 500;
         }
 
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .header p {
-                font-size: 0.9rem;
-            }
-
-            .tab {
-                padding: 15px 10px;
-                font-size: 0.95rem;
-            }
-
-            .tab-content {
-                padding: 20px;
-            }
-
-            .decoded-section {
-                grid-template-columns: 1fr;
-            }
+        /* Responsive */
+        @media (max-width: 900px) {
+            .decoded-section { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
+        @media (max-width: 600px) {
+            .tab-content { padding: 20px 16px; }
+            .header { padding: 32px 16px 28px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>JWT Token</h1>
-            <p>Parse and Generate JSON Web Tokens</p>
+            <div class="header-badge">JSON Web Token</div>
+            <h1>JWT Encoder / Decoder</h1>
+            <p>Parse and generate tokens entirely in your browser — nothing is ever sent to a server.</p>
         </div>
 
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('decode')">Decode JWT</button>
-            <button class="tab" onclick="switchTab('encode')">Encode JWT</button>
-        </div>
-
-        <!-- Decode Tab -->
-        <div id="decode-tab" class="tab-content active">
-            <div class="section">
-                <div class="section-title">Input JWT Token</div>
-                <textarea id="jwt-input" placeholder="Paste your JWT Token..."></textarea>
-            </div>
-
-            <div id="decode-error" class="alert alert-error" style="display: none;"></div>
-
-            <div class="decoded-section">
-                <div class="decoded-box">
-                    <h3>Header</h3>
-                    <pre id="header-output">{}</pre>
-                </div>
-                <div class="decoded-box">
-                    <h3>Payload</h3>
-                    <pre id="payload-output">{}</pre>
-                </div>
-                <div class="decoded-box">
-                    <h3>Signature</h3>
-                    <pre id="signature-output">Not verified</pre>
-                </div>
-            </div>
-
-            <div id="token-status-container"></div>
-        </div>
-
-        <!-- Encode Tab -->
-        <div id="encode-tab" class="tab-content">
-            <div class="grid-2">
-                <div class="section">
-                    <div class="section-title">Header</div>
-                    <textarea id="header-input" placeholder='{"alg": "HS256", "typ": "JWT"}'></textarea>
-                </div>
-                <div class="section">
-                    <div class="section-title">Payload</div>
-                    <textarea id="payload-input" placeholder='{"sub": "1234567890", "name": "John Doe", "iat": 1516239022}'></textarea>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="input-group">
-                    <label>Algorithm</label>
-                    <select id="algorithm-select">
-                        <option value="HS256">HS256</option>
-                        <option value="HS384">HS384</option>
-                        <option value="HS512">HS512</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Secret Key</label>
-                    <input type="text" id="secret-input" placeholder="Enter your Secret Key">
-                </div>
-            </div>
-
-            <button class="button" onclick="generateJWT()">Generate JWT Token</button>
-
-            <div id="encode-error" class="alert alert-error" style="display: none;"></div>
-            <div id="encode-success" class="alert alert-success" style="display: none;"></div>
-
-            <div class="section" id="generated-section" style="display: none;">
-                <div class="section-title">Generated JWT Token</div>
-                <textarea id="generated-jwt" readonly></textarea>
-                <button class="copy-button" id="copy-jwt-btn" onclick="copyJWT()">
-                    <svg fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
-                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
-                    </svg>
-                    <span id="copy-btn-text">Copy JWT Token</span>
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('decode', this)">
+                    <span class="tab-icon">🔍</span> Decode JWT
                 </button>
+                <button class="tab" onclick="switchTab('encode', this)">
+                    <span class="tab-icon">✏️</span> Encode JWT
+                </button>
+            </div>
+
+            <!-- Decode Tab -->
+            <div id="decode-tab" class="tab-content active">
+                <div class="section">
+                    <div class="section-title">Input Token</div>
+                    <textarea id="jwt-input" placeholder="Paste your JWT here…" spellcheck="false"></textarea>
+                </div>
+
+                <div id="decode-error" class="alert alert-error" style="display:none;"></div>
+
+                <div class="decoded-section">
+                    <div class="decoded-box">
+                        <div class="decoded-box-header">
+                            <span class="decoded-box-dot dot-header"></span>
+                            <h3>Header</h3>
+                        </div>
+                        <pre id="header-output">{}</pre>
+                    </div>
+                    <div class="decoded-box">
+                        <div class="decoded-box-header">
+                            <span class="decoded-box-dot dot-payload"></span>
+                            <h3>Payload</h3>
+                        </div>
+                        <pre id="payload-output">{}</pre>
+                    </div>
+                    <div class="decoded-box">
+                        <div class="decoded-box-header">
+                            <span class="decoded-box-dot dot-sig"></span>
+                            <h3>Signature</h3>
+                        </div>
+                        <pre id="signature-output">Not verified</pre>
+                    </div>
+                </div>
+
+                <div id="token-status-container"></div>
+            </div>
+
+            <!-- Encode Tab -->
+            <div id="encode-tab" class="tab-content">
+                <div class="grid-2">
+                    <div class="section">
+                        <div class="section-title">Header</div>
+                        <textarea id="header-input" spellcheck="false"></textarea>
+                    </div>
+                    <div class="section">
+                        <div class="section-title">Payload</div>
+                        <textarea id="payload-input" spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Algorithm</label>
+                        <select id="algorithm-select">
+                            <option value="HS256">HS256</option>
+                            <option value="HS384">HS384</option>
+                            <option value="HS512">HS512</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Secret Key</label>
+                        <input type="text" id="secret-input" placeholder="Enter your secret key…">
+                    </div>
+                </div>
+
+                <button class="button" onclick="generateJWT()">Generate JWT Token</button>
+
+                <div style="margin-top:16px">
+                    <div id="encode-error" class="alert alert-error" style="display:none;"></div>
+                    <div id="encode-success" class="alert alert-success" style="display:none;"></div>
+                </div>
+
+                <div class="section" id="generated-section" style="display:none; margin-top:8px;">
+                    <div class="section-title">Generated Token</div>
+                    <textarea id="generated-jwt" readonly spellcheck="false"></textarea>
+                    <button class="copy-button" id="copy-jwt-btn" onclick="copyJWT()">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+                        </svg>
+                        <span id="copy-btn-text">Copy JWT Token</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Base64 URL Encode/Decode
         function base64UrlEncode(str) {
-            return btoa(str)
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, '');
+            return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         }
 
         function base64UrlDecode(str) {
             str = str.replace(/-/g, '+').replace(/_/g, '/');
-            while (str.length % 4) {
-                str += '=';
-            }
+            while (str.length % 4) str += '=';
             return atob(str);
         }
 
-        // Switch Tab
-        function switchTab(tab) {
+        function switchTab(tab, el) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            event.target.classList.add('active');
+            el.classList.add('active');
             document.getElementById(tab + '-tab').classList.add('active');
         }
 
-        // Decode JWT
         function decodeJWT(token) {
             try {
                 const parts = token.split('.');
-                if (parts.length !== 3) {
-                    throw new Error('Invalid JWT format');
-                }
-
+                if (parts.length !== 3) throw new Error('Invalid JWT format');
                 const header = JSON.parse(base64UrlDecode(parts[0]));
                 const payload = JSON.parse(base64UrlDecode(parts[1]));
-                const signature = parts[2];
-
-                return { header, payload, signature };
-            } catch (error) {
-                throw new Error('Could not parse JWT: ' + error.message);
+                return { header, payload, signature: parts[2] };
+            } catch (e) {
+                throw new Error('Could not parse JWT: ' + e.message);
             }
         }
 
-        // Format Time (UTC+8 Taiwan Timezone)
-        function formatTime(timestamp) {
-            const date = new Date(timestamp * 1000); // The timeZone option might not be supported in all browsers
-            return date.toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Taipei'
+        function formatTime(ts) {
+            return new Date(ts * 1000).toLocaleString('zh-TW', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false, timeZone: 'Asia/Taipei'
             }) + ' (UTC+8)';
         }
 
-        // Format Countdown
         function formatCountdown(seconds) {
             if (seconds < 0) return 'Expired';
-            
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-
+            const d = Math.floor(seconds / 86400);
+            const h = Math.floor((seconds % 86400) / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
             const parts = [];
-            if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
-            if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
-            if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
-            if (secs > 0 || parts.length === 0) parts.push(`${secs} second${secs > 1 ? 's' : ''}`);
-
+            if (d > 0) parts.push(`${d}d`);
+            if (h > 0) parts.push(`${h}h`);
+            if (m > 0) parts.push(`${m}m`);
+            if (s > 0 || parts.length === 0) parts.push(`${s}s`);
             return parts.join(' ');
         }
 
-        // Check Token Status
         let countdownInterval = null;
 
         function checkTokenStatus(payload) {
             const container = document.getElementById('token-status-container');
-            
-            // Clear previous countdown interval
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
+            if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
 
-            if (!payload.exp && !payload.nbf && !payload.iat) {
-                container.innerHTML = '';
-                return;
-            }
+            if (!payload.exp && !payload.nbf && !payload.iat) { container.innerHTML = ''; return; }
 
             const now = Math.floor(Date.now() / 1000);
-            const exp = payload.exp;
-            const nbf = payload.nbf;
-            const iat = payload.iat;
+            const { exp, nbf, iat } = payload;
 
-            let statusClass = '';
-            let statusText = '';
-            let showCountdown = false;
+            let statusClass, statusText, showCountdown = false;
 
             if (exp) {
                 if (now >= exp) {
-                    statusClass = 'expired';
-                    statusText = '⚠️ Token has expired';
+                    statusClass = 'expired'; statusText = '⚠️ Token has expired';
                 } else if (nbf && now < nbf) {
-                    statusClass = 'not-yet-valid';
-                    statusText = '⏰ Token not yet valid';
+                    statusClass = 'not-yet-valid'; statusText = '⏰ Token not yet valid';
                 } else {
-                    statusClass = 'valid';
-                    statusText = '✅ Token is valid';
-                    showCountdown = true;
+                    statusClass = 'valid'; statusText = '✅ Token is valid'; showCountdown = true;
                 }
             } else {
-                statusClass = 'no-expiry';
-                statusText = 'ℹ️ Token has no expiration time';
+                statusClass = 'no-expiry'; statusText = 'ℹ️ No expiration time';
             }
 
-            let html = `<div class="token-status ${statusClass}">
-                <div>${statusText}</div>`;
-
-            // Display time information
+            let html = `<div class="token-status ${statusClass}"><div class="status-label">${statusText}</div>`;
             html += '<div class="token-time-info">';
-            
-            if (iat) {
-                html += `
-                    <div class="time-item">
-                        <div class="label">Issued At (iat)</div>
-                        <div class="value">${formatTime(iat)}</div>
-                    </div>`;
-            }
-
-            if (nbf) {
-                html += `
-                    <div class="time-item">
-                        <div class="label">Not Before (nbf)</div>
-                        <div class="value">${formatTime(nbf)}</div>
-                    </div>`;
-            }
-
-            if (exp) {
-                html += `
-                    <div class="time-item">
-                        <div class="label">Expiration Time (exp)</div>
-                        <div class="value">${formatTime(exp)}</div>
-                    </div>`;
-            }
-
+            if (iat) html += `<div class="time-item"><div class="label">Issued At (iat)</div><div class="value">${formatTime(iat)}</div></div>`;
+            if (nbf) html += `<div class="time-item"><div class="label">Not Before (nbf)</div><div class="value">${formatTime(nbf)}</div></div>`;
+            if (exp) html += `<div class="time-item"><div class="label">Expires At (exp)</div><div class="value">${formatTime(exp)}</div></div>`;
             html += '</div>';
-
-            // Countdown timer
-            if (showCountdown && exp) {
-                html += '<div id="countdown-timer" class="countdown"></div>';
-            }
-
+            if (showCountdown && exp) html += '<div id="countdown-timer" class="countdown"></div>';
             html += '</div>';
             container.innerHTML = html;
 
-            // Start countdown timer
             if (showCountdown && exp) {
                 function updateCountdown() {
-                    const now = Math.floor(Date.now() / 1000);
-                    const remaining = exp - now;
-                    const countdownEl = document.getElementById('countdown-timer');
-                    
-                    if (!countdownEl) {
-                        if (countdownInterval) {
-                            clearInterval(countdownInterval);
-                            countdownInterval = null;
-                        }
-                        return;
+                    const rem = exp - Math.floor(Date.now() / 1000);
+                    const el = document.getElementById('countdown-timer');
+                    if (!el) { clearInterval(countdownInterval); countdownInterval = null; return; }
+                    if (rem <= 0) {
+                        el.textContent = 'Expired';
+                        el.className = 'countdown danger';
+                        clearInterval(countdownInterval); countdownInterval = null;
+                        checkTokenStatus(payload); return;
                     }
-
-                    if (remaining <= 0) {
-                        countdownEl.textContent = 'Expired';
-                        countdownEl.className = 'countdown danger';
-                        if (countdownInterval) {
-                            clearInterval(countdownInterval);
-                            countdownInterval = null;
-                        }
-                        checkTokenStatus(payload); // Re-check status
-                        return;
-                    }
-
-                    countdownEl.textContent = `Remaining: ${formatCountdown(remaining)}`;
-                    
-                    // Adjust color based on remaining time
-                    if (remaining < 300) { // Less than 5 minutes
-                        countdownEl.className = 'countdown danger';
-                    } else if (remaining < 3600) { // Less than 1 hour
-                        countdownEl.className = 'countdown warning';
-                    } else {
-                        countdownEl.className = 'countdown';
-                    }
+                    el.textContent = `Expires in ${formatCountdown(rem)}`;
+                    el.className = 'countdown' + (rem < 300 ? ' danger' : rem < 3600 ? ' warning' : '');
                 }
-
                 updateCountdown();
                 countdownInterval = setInterval(updateCountdown, 1000);
             }
         }
 
-        // Listen for input
-        document.getElementById('jwt-input').addEventListener('input', function() {
+        document.getElementById('jwt-input').addEventListener('input', function () {
             const token = this.value.trim();
             const errorDiv = document.getElementById('decode-error');
-
             if (!token) {
                 document.getElementById('header-output').textContent = '{}';
                 document.getElementById('payload-output').textContent = '{}';
                 document.getElementById('signature-output').textContent = 'Not verified';
                 document.getElementById('token-status-container').innerHTML = '';
                 errorDiv.style.display = 'none';
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
+                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
                 return;
             }
-
             try {
                 const decoded = decodeJWT(token);
                 document.getElementById('header-output').textContent = JSON.stringify(decoded.header, null, 2);
                 document.getElementById('payload-output').textContent = JSON.stringify(decoded.payload, null, 2);
                 document.getElementById('signature-output').textContent = decoded.signature;
                 errorDiv.style.display = 'none';
-                
-                // Check Token Status
                 checkTokenStatus(decoded.payload);
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
+            } catch (e) {
+                errorDiv.textContent = e.message;
+                errorDiv.style.display = 'flex';
                 document.getElementById('token-status-container').innerHTML = '';
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                }
+                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
             }
         });
 
-        // HMAC SHA implementation (using Web Crypto API)
         async function generateJWT() {
             const headerInput = document.getElementById('header-input').value.trim();
             const payloadInput = document.getElementById('payload-input').value.trim();
@@ -691,107 +719,55 @@
             const algorithm = document.getElementById('algorithm-select').value;
             const errorDiv = document.getElementById('encode-error');
             const successDiv = document.getElementById('encode-success');
-
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
-
             try {
-                if (!headerInput || !payloadInput) {
-                    throw new Error('Please fill in Header and Payload');
-                }
-
-                if (!secret) {
-                    throw new Error('Please enter a Secret Key');
-                }
-
+                if (!headerInput || !payloadInput) throw new Error('Please fill in Header and Payload');
+                if (!secret) throw new Error('Please enter a Secret Key');
                 const header = JSON.parse(headerInput);
                 const payload = JSON.parse(payloadInput);
-
-                header.alg = algorithm;
-                header.typ = 'JWT';
-
+                header.alg = algorithm; header.typ = 'JWT';
                 const encodedHeader = base64UrlEncode(JSON.stringify(header));
                 const encodedPayload = base64UrlEncode(JSON.stringify(payload));
                 const message = encodedHeader + '.' + encodedPayload;
-
-                // Generate signature using Web Crypto API
                 const encoder = new TextEncoder();
                 const key = await crypto.subtle.importKey(
-                    'raw',
-                    encoder.encode(secret),
+                    'raw', encoder.encode(secret),
                     { name: 'HMAC', hash: algorithm.replace('HS', 'SHA-') },
-                    false,
-                    ['sign']
+                    false, ['sign']
                 );
-
-                const signature = await crypto.subtle.sign(
-                    'HMAC',
-                    key,
-                    encoder.encode(message)
-                );
-
-                const signatureArray = Array.from(new Uint8Array(signature));
-                const signatureBase64 = base64UrlEncode(
-                    String.fromCharCode.apply(null, signatureArray)
-                );
-
-                const jwt = message + '.' + signatureBase64;
-
+                const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+                const sigB64 = base64UrlEncode(String.fromCharCode(...new Uint8Array(sig)));
+                const jwt = message + '.' + sigB64;
                 document.getElementById('generated-jwt').value = jwt;
                 document.getElementById('generated-section').style.display = 'block';
-                document.getElementById('copy-jwt-btn').style.display = 'inline-flex';
-                successDiv.textContent = 'JWT Token generated successfully!';
-                successDiv.style.display = 'block';
-
-                // Reset copy button state
-                const copyBtn = document.getElementById('copy-jwt-btn');
-                const copyBtnText = document.getElementById('copy-btn-text');
-                copyBtn.classList.remove('copied');
-                copyBtnText.textContent = 'Copy JWT Token';
-
-            } catch (error) {
-                errorDiv.textContent = 'Generation failed: ' + error.message;
-                errorDiv.style.display = 'block';
+                successDiv.textContent = '✅ JWT Token generated successfully!';
+                successDiv.style.display = 'flex';
+                const btn = document.getElementById('copy-jwt-btn');
+                btn.classList.remove('copied');
+                document.getElementById('copy-btn-text').textContent = 'Copy JWT Token';
+            } catch (e) {
+                errorDiv.textContent = '⚠️ ' + e.message;
+                errorDiv.style.display = 'flex';
             }
         }
 
-        // Copy JWT Token
         function copyJWT() {
-            const jwtText = document.getElementById('generated-jwt').value;
-            const copyBtn = document.getElementById('copy-jwt-btn');
-            const copyBtnText = document.getElementById('copy-btn-text');
-
-            if (!jwtText) {
-                return;
-            }
-
-            // Copy to clipboard
-            navigator.clipboard.writeText(jwtText).then(() => {
-                // Change button style and text
-                copyBtn.classList.add('copied');
-                copyBtnText.textContent = '✓ Copied!';
-
-                // Revert after 2 seconds
-                setTimeout(() => {
-                    copyBtn.classList.remove('copied');
-                    copyBtnText.textContent = 'Copy JWT Token';
-                }, 2000);
-            }).catch(err => {
-                console.error('Copy failed:', err);
-                alert('Copy failed, please copy manually.');
-            });
+            const text = document.getElementById('generated-jwt').value;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-jwt-btn');
+                const label = document.getElementById('copy-btn-text');
+                btn.classList.add('copied');
+                label.textContent = '✓ Copied!';
+                setTimeout(() => { btn.classList.remove('copied'); label.textContent = 'Copy JWT Token'; }, 2000);
+            }).catch(() => alert('Copy failed, please copy manually.'));
         }
 
-        // Initialize with default values
-        document.getElementById('header-input').value = JSON.stringify({
-            "alg": "HS256",
-            "typ": "JWT"
-        }, null, 2);
-
+        // Default values
+        document.getElementById('header-input').value = JSON.stringify({ alg: 'HS256', typ: 'JWT' }, null, 2);
         document.getElementById('payload-input').value = JSON.stringify({
-            "sub": "1234567890",
-            "name": "John Doe",
-            "iat": Math.floor(Date.now() / 1000)
+            sub: '1234567890', name: 'John Doe', iat: Math.floor(Date.now() / 1000)
         }, null, 2);
     </script>
 </body>
