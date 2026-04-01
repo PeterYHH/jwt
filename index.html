@@ -470,6 +470,37 @@
         .json-bool   { color: #f9a8d4; }
         .json-null   { color: #94a3b8; }
 
+        /* Claims Tooltip */
+        .claim-key {
+            color: #5eead4;
+            cursor: help;
+            border-bottom: 1px dashed rgba(45,212,191,0.45);
+        }
+
+        #claim-tooltip {
+            display: none;
+            position: fixed;
+            background: #1e3a38;
+            border: 1px solid rgba(45,212,191,0.3);
+            color: #ccfbf1;
+            font-size: 11.5px;
+            font-weight: 500;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            padding: 8px 12px;
+            border-radius: 8px;
+            white-space: pre-line;
+            max-width: 300px;
+            width: max-content;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        #claim-tooltip.visible { opacity: 1; }
+
         /* Signature Verification */
         .verify-row {
             display: flex;
@@ -662,6 +693,8 @@
         </div>
     </div>
 
+    <div id="claim-tooltip"></div>
+
     <script>
         // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -674,6 +707,45 @@
             while (str.length % 4) str += '=';
             return atob(str);
         }
+
+        // ── JWT Claims 說明（繁體中文）────────────────────────────────────────
+
+        const CLAIM_DESCRIPTIONS = {
+            // RFC 7519 標準 Claims
+            iss: '發行者 (Issuer)\n簽發此 Token 的主體，通常為伺服器或服務名稱。',
+            sub: '主體 (Subject)\nToken 所代表的使用者或實體，通常為使用者 ID。',
+            aud: '受眾 (Audience)\n此 Token 的預期接收方，接收方必須驗證自己是否在此清單中。',
+            exp: '到期時間 (Expiration Time)\nToken 的過期時間（Unix 時間戳），超過此時間後 Token 無效。',
+            nbf: '生效時間 (Not Before)\nToken 在此時間之前不得被接受（Unix 時間戳）。',
+            iat: '簽發時間 (Issued At)\nToken 的簽發時間（Unix 時間戳）。',
+            jti: 'JWT 唯一識別碼 (JWT ID)\n此 Token 的唯一識別碼，可用於防止重放攻擊。',
+            // 常見 OIDC / 自訂 Claims
+            name:             '使用者全名。',
+            given_name:       '使用者名字（名）。',
+            family_name:      '使用者姓氏（姓）。',
+            email:            '使用者電子郵件地址。',
+            email_verified:   '電子郵件是否已通過驗證。',
+            picture:          '使用者頭像圖片 URL。',
+            locale:           '使用者偏好語言與地區設定。',
+            phone_number:     '使用者電話號碼。',
+            address:          '使用者地址資訊。',
+            birthdate:        '使用者出生日期。',
+            gender:           '使用者性別。',
+            zoneinfo:         '使用者所在時區。',
+            updated_at:       '使用者資料最後更新時間。',
+            nonce:            '用於防止重放攻擊的隨機值，由客戶端在授權請求中提供。',
+            acr:              '驗證情境類別參考 (Authentication Context Class Reference)。',
+            amr:              '驗證方法參考 (Authentication Methods References)，例如 pwd、otp。',
+            azp:              '授權方 (Authorized Party)，即被授權使用此 Token 的客戶端 ID。',
+            at_hash:          'Access Token 的雜湊值，用於驗證 Access Token 的完整性。',
+            c_hash:           '授權碼的雜湊值，用於驗證授權碼的完整性。',
+            sid:              '會話識別碼 (Session ID)，用於前端登出場景。',
+            roles:            '使用者所擁有的角色清單。',
+            scope:            '此 Token 被授予的權限範圍。',
+            client_id:        '發出請求的 OAuth 2.0 客戶端識別碼。',
+            tenant_id:        '租戶識別碼，常見於多租戶系統。',
+            org_id:           '組織識別碼。',
+        };
 
         // ── JSON Syntax Highlighting ─────────────────────────────────────────
         // Steps: 1) pretty-print, 2) escape HTML entities, 3) wrap tokens in spans.
@@ -695,10 +767,18 @@
                 /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|true|false|null|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
                 (match) => {
                     if (match.startsWith('"')) {
-                        // Key: string followed by colon
-                        return match.endsWith(':')
-                            ? `<span class="json-key">${match}</span>`
-                            : `<span class="json-string">${match}</span>`;
+                        if (match.endsWith(':')) {
+                            // Extract raw key name (strip surrounding quotes and trailing colon+spaces)
+                            const keyName = match.replace(/^"|"\s*:$/g, '');
+                            const desc = CLAIM_DESCRIPTIONS[keyName];
+                            if (desc) {
+                                // Escape desc for use in HTML attribute (& and " only — no < > in our strings)
+                                const safeDesc = desc.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                                return `<span class="claim-key" data-tip="${safeDesc}">${match}</span>`;
+                            }
+                            return `<span class="json-key">${match}</span>`;
+                        }
+                        return `<span class="json-string">${match}</span>`;
                     }
                     if (match === 'true' || match === 'false') return `<span class="json-bool">${match}</span>`;
                     if (match === 'null')                       return `<span class="json-null">${match}</span>`;
@@ -964,6 +1044,45 @@
         document.getElementById('payload-input').value = JSON.stringify({
             sub: '1234567890', name: 'John Doe', iat: Math.floor(Date.now() / 1000)
         }, null, 2);
+
+        // ── Claim Tooltip (global fixed div, avoids overflow:hidden clipping) ─
+
+        const claimTooltip = document.getElementById('claim-tooltip');
+
+        document.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('.claim-key');
+            if (!target || !target.dataset.tip) return;
+
+            claimTooltip.textContent = target.dataset.tip;
+            claimTooltip.style.display = 'block';
+
+            // Read bounding rect AFTER making it visible so dimensions are correct
+            requestAnimationFrame(() => {
+                const anchor = target.getBoundingClientRect();
+                const tip    = claimTooltip.getBoundingClientRect();
+                const margin = 10;
+                const vw     = window.innerWidth;
+                const vh     = window.innerHeight;
+
+                // Prefer above; flip below if not enough room
+                let top = anchor.top - tip.height - margin;
+                if (top < margin) top = anchor.bottom + margin;
+
+                // Horizontal: centre on anchor, clamp to viewport
+                let left = anchor.left + anchor.width / 2 - tip.width / 2;
+                left = Math.max(margin, Math.min(left, vw - tip.width - margin));
+
+                claimTooltip.style.top  = top  + 'px';
+                claimTooltip.style.left = left + 'px';
+                claimTooltip.classList.add('visible');
+            });
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            if (!e.target.closest('.claim-key')) return;
+            claimTooltip.classList.remove('visible');
+            claimTooltip.style.display = 'none';
+        });
     </script>
 </body>
 </html>
