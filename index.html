@@ -195,7 +195,7 @@
         textarea:focus, input:focus, select:focus {
             outline: none;
             border-color: var(--border-focus);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+            box-shadow: 0 0 0 3px rgba(13,148,136,0.15);
         }
 
         textarea::placeholder, input::placeholder {
@@ -463,6 +463,83 @@
             font-weight: 500;
         }
 
+        /* JSON Syntax Highlight */
+        .json-key    { color: #5eead4; }
+        .json-string { color: #fcd34d; }
+        .json-number { color: #93c5fd; }
+        .json-bool   { color: #f9a8d4; }
+        .json-null   { color: #94a3b8; }
+
+        /* Signature Verification */
+        .verify-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+            padding: 14px 16px;
+            background: var(--bg-box);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .verify-row label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            letter-spacing: 0.03em;
+        }
+
+        .verify-row input {
+            flex: 1;
+            min-width: 0;
+            background: var(--bg-input);
+            padding: 8px 12px;
+            font-size: 13px;
+            min-height: unset;
+            resize: none;
+        }
+
+        .sig-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+
+        .sig-badge.verified {
+            background: rgba(16,185,129,0.15);
+            border: 1px solid rgba(16,185,129,0.35);
+            color: #6ee7b7;
+        }
+
+        .sig-badge.invalid {
+            background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.35);
+            color: #fca5a5;
+        }
+
+        .sig-badge.pending {
+            background: rgba(148,163,184,0.1);
+            border: 1px solid rgba(148,163,184,0.2);
+            color: var(--text-muted);
+        }
+
+        .sig-badge.unsupported {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.25);
+            color: #fcd34d;
+        }
+
+        .dot-sig-verified { background: #10b981 !important; box-shadow: 0 0 5px #10b981; }
+        .dot-sig-invalid  { background: #ef4444 !important; box-shadow: 0 0 5px #ef4444; }
+
         /* Responsive */
         @media (max-width: 900px) {
             .decoded-section { grid-template-columns: 1fr; }
@@ -500,7 +577,13 @@
                     <textarea id="jwt-input" placeholder="Paste your JWT here…" spellcheck="false"></textarea>
                 </div>
 
-                <div id="decode-error" class="alert alert-error" style="display:none;"></div>
+                <div class="verify-row">
+                    <label>Verify Secret</label>
+                    <input type="text" id="verify-secret-input" placeholder="Enter secret to verify signature…" spellcheck="false">
+                    <span class="sig-badge pending" id="sig-verify-badge">— Unverified</span>
+                </div>
+
+                <div id="decode-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>
 
                 <div class="decoded-section">
                     <div class="decoded-box">
@@ -580,6 +663,8 @@
     </div>
 
     <script>
+        // ── Helpers ──────────────────────────────────────────────────────────
+
         function base64UrlEncode(str) {
             return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         }
@@ -590,6 +675,40 @@
             return atob(str);
         }
 
+        // ── JSON Syntax Highlighting ─────────────────────────────────────────
+        // Steps: 1) pretty-print, 2) escape HTML entities, 3) wrap tokens in spans.
+        // Escaping BEFORE regex prevents XSS from values containing < > &.
+
+        function syntaxHighlight(obj) {
+            const json = JSON.stringify(obj, null, 2);
+
+            // Step 1 — escape HTML so values like "<script>" can't break the DOM
+            const escaped = json
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Step 2 — match JSON tokens and wrap with colored spans.
+            // Pattern covers: strings (with optional trailing colon = key),
+            // true/false, null, and numbers (incl. scientific notation).
+            return escaped.replace(
+                /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|true|false|null|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
+                (match) => {
+                    if (match.startsWith('"')) {
+                        // Key: string followed by colon
+                        return match.endsWith(':')
+                            ? `<span class="json-key">${match}</span>`
+                            : `<span class="json-string">${match}</span>`;
+                    }
+                    if (match === 'true' || match === 'false') return `<span class="json-bool">${match}</span>`;
+                    if (match === 'null')                       return `<span class="json-null">${match}</span>`;
+                    return `<span class="json-number">${match}</span>`;
+                }
+            );
+        }
+
+        // ── Tab Switching ─────────────────────────────────────────────────────
+
         function switchTab(tab, el) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -597,17 +716,77 @@
             document.getElementById(tab + '-tab').classList.add('active');
         }
 
+        // ── JWT Decode ────────────────────────────────────────────────────────
+
         function decodeJWT(token) {
             try {
                 const parts = token.split('.');
                 if (parts.length !== 3) throw new Error('Invalid JWT format');
-                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const header  = JSON.parse(base64UrlDecode(parts[0]));
                 const payload = JSON.parse(base64UrlDecode(parts[1]));
-                return { header, payload, signature: parts[2] };
+                return { header, payload, signature: parts[2], raw: parts };
             } catch (e) {
                 throw new Error('Could not parse JWT: ' + e.message);
             }
         }
+
+        // ── Signature Verification ────────────────────────────────────────────
+
+        // Returns { status: 'verified'|'invalid'|'unsupported'|'error', message? }
+        async function verifySignature(rawParts, alg, secret) {
+            if (!alg || !alg.startsWith('HS')) {
+                return { status: 'unsupported', message: `Algorithm ${alg || '?'} not supported` };
+            }
+            try {
+                const message = rawParts[0] + '.' + rawParts[1];
+                const encoder = new TextEncoder();
+                const key = await crypto.subtle.importKey(
+                    'raw', encoder.encode(secret),
+                    { name: 'HMAC', hash: alg.replace('HS', 'SHA-') },
+                    false, ['sign']
+                );
+                const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+                const computed = base64UrlEncode(String.fromCharCode(...new Uint8Array(sig)));
+                return { status: computed === rawParts[2] ? 'verified' : 'invalid' };
+            } catch (e) {
+                return { status: 'error', message: e.message };
+            }
+        }
+
+        function setSigBadge(status, extra) {
+            const badge = document.getElementById('sig-verify-badge');
+            const dot   = document.querySelector('.dot-sig');
+            badge.className = 'sig-badge ' + status;
+            dot.classList.remove('dot-sig-verified', 'dot-sig-invalid');
+            const labels = {
+                verified:    '✓ Signature verified',
+                invalid:     '✗ Invalid signature',
+                unsupported: `⚠ ${extra || 'Algorithm not supported'}`,
+                pending:     '— Unverified',
+                error:       '⚠ Verify error',
+            };
+            badge.textContent = labels[status] || '— Unverified';
+            if (status === 'verified') dot.classList.add('dot-sig-verified');
+            if (status === 'invalid')  dot.classList.add('dot-sig-invalid');
+        }
+
+        // ── Shared decode state ───────────────────────────────────────────────
+
+        let currentDecoded = null; // { header, payload, signature, raw }
+
+        async function runVerify() {
+            if (!currentDecoded) return;
+            const secret = document.getElementById('verify-secret-input').value;
+            if (!secret) { setSigBadge('pending'); return; }
+            const result = await verifySignature(
+                currentDecoded.raw,
+                currentDecoded.header.alg,
+                secret
+            );
+            setSigBadge(result.status, result.message);
+        }
+
+        // ── Time / Countdown helpers ──────────────────────────────────────────
 
         function formatTime(ts) {
             return new Date(ts * 1000).toLocaleString('zh-TW', {
@@ -643,14 +822,13 @@
             const { exp, nbf, iat } = payload;
 
             let statusClass, statusText, showCountdown = false;
-
             if (exp) {
                 if (now >= exp) {
-                    statusClass = 'expired'; statusText = '⚠️ Token has expired';
+                    statusClass = 'expired';       statusText = '⚠️ Token has expired';
                 } else if (nbf && now < nbf) {
                     statusClass = 'not-yet-valid'; statusText = '⏰ Token not yet valid';
                 } else {
-                    statusClass = 'valid'; statusText = '✅ Token is valid'; showCountdown = true;
+                    statusClass = 'valid';         statusText = '✅ Token is valid'; showCountdown = true;
                 }
             } else {
                 statusClass = 'no-expiry'; statusText = 'ℹ️ No expiration time';
@@ -667,9 +845,9 @@
             container.innerHTML = html;
 
             if (showCountdown && exp) {
-                function updateCountdown() {
+                const tick = () => {
                     const rem = exp - Math.floor(Date.now() / 1000);
-                    const el = document.getElementById('countdown-timer');
+                    const el  = document.getElementById('countdown-timer');
                     if (!el) { clearInterval(countdownInterval); countdownInterval = null; return; }
                     if (rem <= 0) {
                         el.textContent = 'Expired';
@@ -679,55 +857,71 @@
                     }
                     el.textContent = `Expires in ${formatCountdown(rem)}`;
                     el.className = 'countdown' + (rem < 300 ? ' danger' : rem < 3600 ? ' warning' : '');
-                }
-                updateCountdown();
-                countdownInterval = setInterval(updateCountdown, 1000);
+                };
+                tick();
+                countdownInterval = setInterval(tick, 1000);
             }
         }
 
-        document.getElementById('jwt-input').addEventListener('input', function () {
+        // ── Decode Tab Events ─────────────────────────────────────────────────
+
+        function resetDecodeUI() {
+            document.getElementById('header-output').innerHTML  = '{}';
+            document.getElementById('payload-output').innerHTML = '{}';
+            document.getElementById('signature-output').textContent = 'Not verified';
+            document.getElementById('token-status-container').innerHTML = '';
+            document.getElementById('decode-error').style.display = 'none';
+            setSigBadge('pending');
+            currentDecoded = null;
+            if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+        }
+
+        document.getElementById('jwt-input').addEventListener('input', async function () {
             const token = this.value.trim();
+            if (!token) { resetDecodeUI(); return; }
+
             const errorDiv = document.getElementById('decode-error');
-            if (!token) {
-                document.getElementById('header-output').textContent = '{}';
-                document.getElementById('payload-output').textContent = '{}';
-                document.getElementById('signature-output').textContent = 'Not verified';
-                document.getElementById('token-status-container').innerHTML = '';
-                errorDiv.style.display = 'none';
-                if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
-                return;
-            }
             try {
                 const decoded = decodeJWT(token);
-                document.getElementById('header-output').textContent = JSON.stringify(decoded.header, null, 2);
-                document.getElementById('payload-output').textContent = JSON.stringify(decoded.payload, null, 2);
+                currentDecoded = decoded;
+
+                // Syntax-highlighted output (innerHTML, safe because we HTML-escape first)
+                document.getElementById('header-output').innerHTML  = syntaxHighlight(decoded.header);
+                document.getElementById('payload-output').innerHTML = syntaxHighlight(decoded.payload);
                 document.getElementById('signature-output').textContent = decoded.signature;
                 errorDiv.style.display = 'none';
                 checkTokenStatus(decoded.payload);
+                await runVerify(); // re-run with existing secret if any
             } catch (e) {
+                currentDecoded = null;
                 errorDiv.textContent = e.message;
                 errorDiv.style.display = 'flex';
                 document.getElementById('token-status-container').innerHTML = '';
+                setSigBadge('pending');
                 if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
             }
         });
 
+        document.getElementById('verify-secret-input').addEventListener('input', runVerify);
+
+        // ── Encode Tab ────────────────────────────────────────────────────────
+
         async function generateJWT() {
             const headerInput = document.getElementById('header-input').value.trim();
             const payloadInput = document.getElementById('payload-input').value.trim();
-            const secret = document.getElementById('secret-input').value;
+            const secret    = document.getElementById('secret-input').value;
             const algorithm = document.getElementById('algorithm-select').value;
-            const errorDiv = document.getElementById('encode-error');
+            const errorDiv   = document.getElementById('encode-error');
             const successDiv = document.getElementById('encode-success');
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
             try {
                 if (!headerInput || !payloadInput) throw new Error('Please fill in Header and Payload');
                 if (!secret) throw new Error('Please enter a Secret Key');
-                const header = JSON.parse(headerInput);
+                const header  = JSON.parse(headerInput);
                 const payload = JSON.parse(payloadInput);
                 header.alg = algorithm; header.typ = 'JWT';
-                const encodedHeader = base64UrlEncode(JSON.stringify(header));
+                const encodedHeader  = base64UrlEncode(JSON.stringify(header));
                 const encodedPayload = base64UrlEncode(JSON.stringify(payload));
                 const message = encodedHeader + '.' + encodedPayload;
                 const encoder = new TextEncoder();
@@ -736,9 +930,9 @@
                     { name: 'HMAC', hash: algorithm.replace('HS', 'SHA-') },
                     false, ['sign']
                 );
-                const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+                const sig    = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
                 const sigB64 = base64UrlEncode(String.fromCharCode(...new Uint8Array(sig)));
-                const jwt = message + '.' + sigB64;
+                const jwt    = message + '.' + sigB64;
                 document.getElementById('generated-jwt').value = jwt;
                 document.getElementById('generated-section').style.display = 'block';
                 successDiv.textContent = '✅ JWT Token generated successfully!';
@@ -756,7 +950,7 @@
             const text = document.getElementById('generated-jwt').value;
             if (!text) return;
             navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copy-jwt-btn');
+                const btn   = document.getElementById('copy-jwt-btn');
                 const label = document.getElementById('copy-btn-text');
                 btn.classList.add('copied');
                 label.textContent = '✓ Copied!';
@@ -764,7 +958,8 @@
             }).catch(() => alert('Copy failed, please copy manually.'));
         }
 
-        // Default values
+        // ── Default values ────────────────────────────────────────────────────
+
         document.getElementById('header-input').value = JSON.stringify({ alg: 'HS256', typ: 'JWT' }, null, 2);
         document.getElementById('payload-input').value = JSON.stringify({
             sub: '1234567890', name: 'John Doe', iat: Math.floor(Date.now() / 1000)
